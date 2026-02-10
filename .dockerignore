@@ -1,0 +1,16 @@
+# 排除日志文件
+openclaw/logs/*.log
+
+# 排除备份文件
+*.bak
+
+# 排除 node_modules（如果有）
+node_modules/
+
+# 排除 Git 文件
+.git/
+.gitignore
+
+# 排除临时文件
+*.tmp
+*.temp

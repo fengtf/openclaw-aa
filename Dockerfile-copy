@@ -1,0 +1,70 @@
+FROM node:24-trixie
+
+ENV HOME=/root
+ENV VENV_PATH=/opt/venv
+ENV PATH="$VENV_PATH/bin:$PATH"
+ENV MODELSCOPE_CACHE=/root/.cache/modelscope
+ENV HF_HOME=/root/.cache/huggingface
+
+RUN apt-get update && apt-get install -y \
+    git \
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建 Python 虚拟环境
+RUN python3 -m venv $VENV_PATH
+
+# 升级虚拟环境内的 pip
+RUN pip install --upgrade pip
+
+# 安装 PyTorch 和 torchaudio (CPU)
+RUN pip install --no-cache-dir \
+    torch>=1.13 \
+    torchaudio \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# 安装 funasr 及依赖
+RUN pip install --no-cache-dir -U \
+    funasr \
+    modelscope \
+    huggingface \
+    huggingface_hub
+
+# 下载模型到镜像缓存（离线可用）
+# RUN python3 -c "from funasr import AutoModel; AutoModel(model='FunAudioLLM/Fun-ASR-Nano-2512')" && \
+#     python3 -c "from funasr import AutoModel; AutoModel(model='fsmn-vad')" && \
+#     python3 -c "from funasr import AutoModel; AutoModel(model='ct-punc')"
+
+# 设置工作目录
+WORKDIR /root
+
+# 全局安装 openclaw
+RUN npm install -g openclaw
+
+# 创建 .openclaw 目录
+RUN mkdir -p /root/.openclaw
+
+# 复制 package.json
+COPY ./package.json /root/package.json
+RUN cd /root && npm install
+
+# 将本地 openclaw 目录的所有内容复制到镜像的 /root/.openclaw 中
+COPY ./openclaw /root/.openclaw
+
+# 安装插件依赖
+RUN cd /root/.openclaw/plugins/openclaw-plugin-askaway && npm install
+
+# 复制启动脚本
+COPY ./scripts /root/scripts
+RUN chmod +x /root/scripts/entrypoint.sh
+
+# 暴露端口（根据 openclaw.json 中的配置）
+EXPOSE 18789
+
+# 设置启动脚本为 ENTRYPOINT
+ENTRYPOINT ["/root/scripts/entrypoint.sh"]
+
+# 启动命令
+CMD ["openclaw", "gateway", "run"]
