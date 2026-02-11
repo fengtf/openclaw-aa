@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+
+
 # 升级 pip
 RUN pip install --upgrade pip
 
@@ -33,10 +35,9 @@ RUN pip install --no-cache-dir -U \
     modelscope \
     huggingface
 
-# 下载模型到镜像缓存（离线可用）
-# RUN python3 -c "from funasr import AutoModel; AutoModel(model='FunAudioLLM/Fun-ASR-Nano-2512')" && \
-#     python3 -c "from funasr import AutoModel; AutoModel(model='fsmn-vad')" && \
-#     python3 -c "from funasr import AutoModel; AutoModel(model='ct-punc')"
+COPY ./funasr-wss-server /root/funasr-wss-server
+
+RUN cd /root/funasr-wss-server && pip install -r requirements.txt -q
 
 # 设置工作目录
 WORKDIR /root
@@ -53,7 +54,6 @@ RUN cd /root && npm install
 
 # 将本地 openclaw 目录的所有内容复制到镜像的 /root/.openclaw 中
 COPY ./openclaw /root/.openclaw
-
 COPY ./model-cache /root/.cache
 COPY ./assets /root/assets
 

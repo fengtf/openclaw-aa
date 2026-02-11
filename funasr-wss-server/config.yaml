@@ -1,0 +1,23 @@
+server:
+  host: "0.0.0.0"
+  port: 10095
+  max_connections: 50
+  sample_rate: 16000
+
+models:
+  # 使用 paraformer-zh（离线模型）
+  asr_model: "paraformer-zh"  # 非实时模型
+  vad_model: "fsmn-vad"       # 语音端点检测
+  punc_model: "ct-punc"       # 标点恢复
+  spk_model: "cam++"          # 说话人识别（可选）
+  
+  model_hub: "ms"  # ms 或 hf
+  device: "cpu"  # 建议使用GPU加速
+  
+asr_config:
+  batch_size_s: 300  # 动态batch，总音频时长（秒）
+  hotword: null      # 热词列表
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
