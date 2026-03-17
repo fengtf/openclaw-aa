@@ -49,6 +49,6 @@ coverage/
 .cache/
 .git
 model-cache/
-openclaw/plugins/openclaw-plugin-askaway/
+plugins/openclaw-plugin-askaway/
 outputs/
 

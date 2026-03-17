@@ -5,7 +5,7 @@ const TOML = require('@iarna/toml');
 const { execSync } = require('child_process');
 
 // 配置文件路径
-const CONFIG_PATH = '/root/.openclaw/plugins/openclaw-plugin-askaway/Actr.toml';
+const CONFIG_PATH = '/root/plugins/openclaw-plugin-askaway/Actr.toml';
 
 // 读取环境变量
 const RTC_REALM_ID = process.env.RTC_REALM_ID;
@@ -90,7 +90,7 @@ try {
   // 安装插件
   console.log('开始安装 openclaw-plugin-askaway 插件...');
   try {
-    const installCommand = 'openclaw plugins install /root/.openclaw/plugins/openclaw-plugin-askaway';
+    const installCommand = 'openclaw plugins install /root/plugins/openclaw-plugin-askaway';
     console.log(`执行命令: ${installCommand}`);
     
     execSync(installCommand, { 

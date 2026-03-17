@@ -3,6 +3,21 @@ FROM python:3.11-slim
 ENV HOME=/root
 ENV MODELSCOPE_CACHE=/root/.cache/modelscope
 ENV HF_HOME=/root/.cache/huggingface
+# 模型选择（auth-choice方式）
+ENV AUTH_CHOICE=""
+ENV KEY_NAME=""
+ENV API_KEY=""
+ENV MODEL_NAME=""
+
+# 模型选择（非auth-choice方式,需要保证API_KEY、MODEL_TYPE有值） anthropic、opencode
+ENV MODEL_TYPE=""
+
+# 自定义模型
+ENV CUSTOM_MODEL_BASE_PATH=""
+ENV CUSTOM_MODEL_API_KEY=""
+ENV CUSTOM_MODEL_NAME=""
+# 模型提供者
+ENV CUSTOM_MODEL_PROVIDER=""
 
 # 安装系统依赖和 Node.js 24
 RUN apt-get update && apt-get install -y \
@@ -45,21 +60,17 @@ WORKDIR /root
 # 全局安装 openclaw
 RUN npm install -g openclaw
 
-# 创建 .openclaw 目录
-RUN mkdir -p /root/.openclaw
-
 # 复制 package.json
 COPY ./package.json /root/package.json
 RUN cd /root && npm install
 
-# 将本地 openclaw 目录的所有内容复制到镜像的 /root/.openclaw 中
-COPY ./openclaw /root/.openclaw
 COPY ./model-cache /root/.cache
 COPY ./assets /root/assets
+COPY ./plugins /root/plugins
 
 
 # 安装插件依赖
-RUN cd /root/.openclaw/plugins/openclaw-plugin-askaway && npm install
+RUN cd /root/plugins/openclaw-plugin-askaway && npm install
 
 # 复制启动脚本
 COPY ./scripts /root/scripts

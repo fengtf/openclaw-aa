@@ -46,6 +46,57 @@ else
   exit 1
 fi
 
+# 判断是否使用自定义模型模式
+USE_CUSTOM_MODEL=false
+if [ -n "$CUSTOM_MODEL_BASE_PATH" ] && [ -n "$CUSTOM_MODEL_API_KEY" ] && [ -n "$CUSTOM_MODEL_NAME" ] && [ -n "$CUSTOM_MODEL_PROVIDER" ]; then
+  USE_CUSTOM_MODEL=true
+fi
+
+if [ "$USE_CUSTOM_MODEL" = "true" ]; then
+  # 自定义模型模式：使用 skip auth 执行 onboard，然后修改 openclaw.json
+  echo "检测到自定义模型配置，使用自定义模型模式..."
+  echo "执行 openclaw onboard (skip auth)..."
+  if openclaw onboard \
+    --non-interactive \
+    --accept-risk \
+    --auth-choice skip \
+    --skip-daemon \
+    --skip-skills \
+    --skip-health; then
+    echo "✓ openclaw onboard 成功"
+  else
+    echo "✗ openclaw onboard 失败"
+    exit 1
+  fi
+  echo ""
+
+  echo "修改 openclaw.json 自定义模型配置..."
+  if node /root/scripts/modify-custom-model.js; then
+    echo "✓ openclaw.json 更新成功"
+  else
+    echo "✗ openclaw.json 更新失败"
+    exit 1
+  fi
+  echo ""
+else
+  # 执行 openclaw onboard（仅当 AUTH_CHOICE 已设置时）
+  if [ -n "$AUTH_CHOICE" ]; then
+    echo "执行 openclaw onboard..."
+    ONBOARD_ARGS=(--non-interactive --accept-risk --skip-health)
+    ONBOARD_ARGS+=(--auth-choice "$AUTH_CHOICE")
+    if [ -n "$KEY_NAME" ] && [ -n "$API_KEY" ]; then
+      ONBOARD_ARGS+=("--$KEY_NAME" "$API_KEY")
+    fi
+    if openclaw onboard "${ONBOARD_ARGS[@]}"; then
+      echo "✓ openclaw onboard 成功"
+    else
+      echo "✗ openclaw onboard 失败"
+      exit 1
+    fi
+    echo ""
+  fi
+fi
+
 echo "启动 FunASR Paraformer-zh 服务器..."
 # 在后台启动 FunASR 服务器
 /root/funasr-wss-server/start_paraformer.sh > /tmp/funasr.log 2>&1 &
@@ -108,6 +159,18 @@ echo "=========================================="
 echo "启动 OpenClaw Gateway"
 echo "=========================================="
 echo ""
+
+# 设置模型
+if [ "$USE_CUSTOM_MODEL" = "true" ]; then
+  echo "设置自定义模型: $CUSTOM_MODEL_PROVIDER/$CUSTOM_MODEL_NAME"
+  openclaw models set "$CUSTOM_MODEL_PROVIDER/$CUSTOM_MODEL_NAME"
+  echo "✓ 模型已设置为: $CUSTOM_MODEL_PROVIDER/$CUSTOM_MODEL_NAME"
+elif [ -n "$MODEL_NAME" ]; then
+  # 如果 MODEL_NAME 有值，则设置模型
+  echo "设置模型: $MODEL_NAME"
+  openclaw models set "$MODEL_NAME"
+  echo "✓ 模型已设置为: $MODEL_NAME"
+fi
 
 # 启动应用（执行传入的命令）
 exec "$@"
