@@ -19,6 +19,9 @@ ENV CUSTOM_MODEL_NAME=""
 # 模型提供者
 ENV CUSTOM_MODEL_PROVIDER=""
 
+# 设置openclaw版本（运行时传入，默认 latest）
+ENV OPENCLAW_VERSION="latest"
+
 # 安装系统依赖和 Node.js 24
 RUN apt-get update && apt-get install -y \
     git \
@@ -56,9 +59,6 @@ RUN cd /root/funasr-wss-server && pip install -r requirements.txt -q
 
 # 设置工作目录
 WORKDIR /root
-
-# 全局安装 openclaw
-RUN npm install -g openclaw
 
 # 复制 package.json
 COPY ./package.json /root/package.json

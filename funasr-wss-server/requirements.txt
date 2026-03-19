@@ -1,7 +1,7 @@
-funasr>=1.0
-modelscope
-torch>=1.13
-torchaudio
+# funasr>=1.0
+# modelscope
+# torch>=1.13
+# torchaudio
 websockets>=10.0
 fastapi>=0.100.0
 uvicorn[standard]>=0.23.0
