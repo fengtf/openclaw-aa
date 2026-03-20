@@ -83,7 +83,7 @@ if [ "$USE_CUSTOM_MODEL" = "true" ]; then
   echo ""
 
   echo "修改 openclaw.json 自定义模型配置..."
-  if node /root/scripts/modify-custom-model.js; then
+  if node /root/scripts/custom-model.js; then
     echo "✓ openclaw.json 更新成功"
   else
     echo "✗ openclaw.json 更新失败"
@@ -127,6 +127,18 @@ else
     fi
     echo ""
   fi
+fi
+
+# 配置搜索 provider（可选）
+if [ -n "$SEARCH_PROVIDER" ] && [ -n "$SEARCH_API_KEY" ]; then
+  echo "配置搜索 Provider..."
+  if node /root/scripts/search-provider.js; then
+    echo "✓ 搜索配置更新成功"
+  else
+    echo "✗ 搜索配置更新失败"
+    exit 1
+  fi
+  echo ""
 fi
 
 # echo "启动 FunASR Paraformer-zh 服务器..."

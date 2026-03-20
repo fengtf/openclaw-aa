@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
 ENV HOME=/root
@@ -22,6 +23,13 @@ ENV CUSTOM_MODEL_PROVIDER=""
 # 设置openclaw版本（运行时传入，默认 latest）
 ENV OPENCLAW_VERSION="latest"
 
+# 设置联网搜索
+ENV SEARCH_PROVIDER=""
+ENV SEARCH_API_KEY=""
+ENV SEARCH_BASE_URL=""
+
+WORKDIR /root
+
 # 安装系统依赖和 Node.js 24
 RUN apt-get update && apt-get install -y \
     git \
@@ -36,43 +44,41 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-
-
-# 升级 pip
-RUN pip install --upgrade pip
-
-# 安装 PyTorch 和 torchaudio (CPU)
-RUN pip install --no-cache-dir \
-    torch>=1.13 \
-    torchaudio \
-    --index-url https://download.pytorch.org/whl/cpu
+# 升级 pip，安装 PyTorch 和 torchaudio (CPU)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && \
+    pip install \
+        "torch>=1.13" \
+        torchaudio \
+        --index-url https://download.pytorch.org/whl/cpu
 
 # 安装 funasr 及依赖
-RUN pip install --no-cache-dir -U \
-    funasr \
-    modelscope \
-    huggingface
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -U funasr modelscope huggingface
 
+# 仅先复制 requirements.txt，代码变动时不触发重新安装
+COPY ./funasr-wss-server/requirements.txt /root/funasr-wss-server/requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r /root/funasr-wss-server/requirements.txt
+
+# 复制 funasr-wss-server 完整代码
 COPY ./funasr-wss-server /root/funasr-wss-server
 
-RUN cd /root/funasr-wss-server && pip install -r requirements.txt -q
-
-# 设置工作目录
-WORKDIR /root
-
-# 复制 package.json
+# 复制 package.json 并安装根依赖
 COPY ./package.json /root/package.json
-RUN cd /root && npm install
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --prefer-offline
 
+# 仅先复制插件 package.json，插件代码变动时不触发重新安装
+COPY ./plugins/openclaw-plugin-askaway/actor-rtc-actr-0.1.14.tgz /root/plugins/openclaw-plugin-askaway/actor-rtc-actr-0.1.14.tgz
+COPY ./plugins/openclaw-plugin-askaway/package.json /root/plugins/openclaw-plugin-askaway/package.json
+RUN --mount=type=cache,target=/root/.npm \
+    cd /root/plugins/openclaw-plugin-askaway && npm install --prefer-offline
+
+# 复制其余文件（变动最频繁，放最后以充分利用缓存）
 COPY ./model-cache /root/.cache
 COPY ./assets /root/assets
 COPY ./plugins /root/plugins
-
-
-# 安装插件依赖
-RUN cd /root/plugins/openclaw-plugin-askaway && npm install
-
-# 复制启动脚本
 COPY ./scripts /root/scripts
 RUN chmod +x /root/scripts/entrypoint.sh
 
